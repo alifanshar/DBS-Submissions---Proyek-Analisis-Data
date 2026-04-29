@@ -163,21 +163,30 @@ with tab1:
                 .sum().reset_index()
             )
             
+            monthly = monthly.sort_values("year_month_dt")
+            
             fig, ax = plt.subplots(figsize=(8, 5))
             
             default_colors = ["#1565C0", "#FF7043", "#43A047"]
             palette = {cat: default_colors[i] for i, cat in enumerate(top_cats)}
             
-            for cat in top_cats:
-                sub = monthly[monthly["product_category_name_english"] == cat]
-                if not sub.empty:
-                    ax.plot(sub["year_month_dt"], sub["total_payment"]/1e3,
-                            marker="o", markersize=4, linewidth=2, label=cat,
-                            color=palette.get(cat, "#888"))
+            sns.lineplot(
+                data=monthly,
+                x="year_month_dt",
+                y=monthly["total_payment"]/1e3,
+                hue="product_category_name_english",
+                palette=palette,
+                marker="o",
+                linewidth=2,
+                ax=ax
+            )
             
             ax.set_xlabel("Bulan", fontsize=10)
             ax.set_ylabel("Revenue (Ribu BRL)", fontsize=10)
-            ax.legend(fontsize=8)
+            
+            handles, labels = ax.get_legend_handles_labels()
+            ax.legend(handles=handles, labels=labels, fontsize=8)
+            
             ax.tick_params(axis="x", rotation=45)
             ax.grid(axis="y", alpha=0.4)
             sns.despine()
