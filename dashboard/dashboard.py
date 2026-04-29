@@ -116,7 +116,7 @@ tab1, tab2, tab3 = st.tabs(["📦 Revenue & Kategori", "🚚 Pengiriman & Review
 # TAB 1: Revenue & Kategori
 # ════════════════════════════════════════════════════
 with tab1:
-    st.subheader("Pertanyaan 1: Kategori Produk dengan Revenue Tertinggi & Tren Bulanan")
+    st.subheader("Kategori Produk dengan Revenue Tertinggi & Tren Bulanan")
 
     cat_rev = (
         df.groupby("product_category_name_english")["total_payment"]
@@ -128,33 +128,38 @@ with tab1:
 
     with col_a:
         st.markdown("**Top 10 Kategori berdasarkan Revenue**")
-        fig, ax = plt.subplots(figsize=(6, 5))
-        colors = ["#1565C0" if i == 0 else "#90CAF9" for i in range(len(cat_rev))]
-        ax.barh(cat_rev["Kategori"][::-1], cat_rev["Revenue"][::-1]/1e6,
-                color=colors[::-1], edgecolor="white")
-        for i, v in enumerate(cat_rev["Revenue"][::-1]/1e6):
-            ax.text(v + 0.01, i, f"{v:.1f}M", va="center", fontsize=8)
-        ax.set_xlabel("Total Revenue (Juta BRL)", fontsize=10)
-        ax.set_xlim(0, cat_rev["Revenue"].max()/1e6 * 1.22)
-        ax.grid(axis="x", alpha=0.4)
-        sns.despine(left=True, bottom=True)
-        plt.tight_layout()
-        st.pyplot(fig)
-        plt.close()
+        # PERBAIKAN 1: Cek apakah data kosong agar terhindar dari ValueError NaN
+        if cat_rev.empty:
+            st.info("Tidak ada data kategori untuk filter yang dipilih.")
+        else:
+            fig, ax = plt.subplots(figsize=(6, 5))
+            colors = ["#1565C0" if i == 0 else "#90CAF9" for i in range(len(cat_rev))]
+            ax.barh(cat_rev["Kategori"][::-1], cat_rev["Revenue"][::-1]/1e6,
+                    color=colors[::-1], edgecolor="white")
+            for i, v in enumerate(cat_rev["Revenue"][::-1]/1e6):
+                ax.text(v + 0.01, i, f"{v:.1f}M", va="center", fontsize=8)
+            ax.set_xlabel("Total Revenue (Juta BRL)", fontsize=10)
+            
+            # Set X-limit dengan aman
+            max_rev = cat_rev["Revenue"].max() / 1e6
+            ax.set_xlim(0, max_rev * 1.22)
+            
+            ax.grid(axis="x", alpha=0.4)
+            sns.despine(left=True, bottom=True)
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close()
 
     with col_b:
         st.markdown("**Tren Revenue Bulanan — Top Kategori**")
         
         top_cats = cat_rev["Kategori"].head(3).tolist()
         
+        # PERBAIKAN 2: Cek apakah top_cats ada isinya agar terhindar dari IndexError
         if not top_cats:
-            st.info("Tidak ada data kategori untuk filter yang dipilih.")
+            st.info("Tidak ada data tren bulanan untuk filter yang dipilih.")
         else:
-            default_colors = ["#1565C0", "#FF7043", "#43A047"]
-            palette = {cat: default_colors[i] for i, cat in enumerate(top_cats)}
-
             df["year_month_dt"] = df["order_purchase_timestamp"].dt.to_period("M").astype(str)
-            
             monthly = (
                 df[df["product_category_name_english"].isin(top_cats)]
                 .groupby(["year_month_dt", "product_category_name_english"])["total_payment"]
@@ -162,6 +167,10 @@ with tab1:
             )
             
             fig, ax = plt.subplots(figsize=(8, 5))
+            
+            # Membuat palette warna secara otomatis sesuai jumlah kategori yang tersisa
+            default_colors = ["#1565C0", "#FF7043", "#43A047"]
+            palette = {cat: default_colors[i] for i, cat in enumerate(top_cats)}
             
             for cat in top_cats:
                 sub = monthly[monthly["product_category_name_english"] == cat]
@@ -173,7 +182,7 @@ with tab1:
             ax.set_xlabel("Bulan", fontsize=10)
             ax.set_ylabel("Revenue (Ribu BRL)", fontsize=10)
             ax.legend(fontsize=8)
-            plt.xticks(rotation=45)
+            ax.tick_params(axis="x", rotation=45)
             ax.grid(axis="y", alpha=0.4)
             sns.despine()
             plt.tight_layout()
@@ -181,9 +190,13 @@ with tab1:
             plt.close()
 
     # Tabel detail
-    with st.expander("📋 Lihat Data Lengkap Top 10 Kategori"):
-        cat_rev["Revenue (BRL)"] = cat_rev["Revenue"].map("BRL {:,.2f}".format)
-        st.dataframe(cat_rev[["Kategori", "Revenue (BRL)"]], use_container_width=True)
+    with st.expander("📋 Lihat Data Lengkap Top Kategori"):
+        if cat_rev.empty:
+            st.write("Data kosong.")
+        else:
+            cat_rev_display = cat_rev.copy()
+            cat_rev_display["Revenue (BRL)"] = cat_rev_display["Revenue"].map("BRL {:,.2f}".format)
+            st.dataframe(cat_rev_display[["Kategori", "Revenue (BRL)"]], use_container_width=True)
 
 # ════════════════════════════════════════════════════
 # TAB 2: Pengiriman & Review
