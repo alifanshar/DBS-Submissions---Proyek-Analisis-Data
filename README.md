@@ -39,7 +39,8 @@ submission/
 │   └── product_category_name_translation.csv
 ├── notebook.ipynb          # Notebook analisis lengkap (sudah dijalankan)
 ├── requirements.txt        # Daftar library yang digunakan
-└── README.md               # Dokumentasi proyek ini
+├── README.md               # Dokumentasi proyek ini
+└── url.txt                 # Link dashboard streamlit
 ```
 
 ---

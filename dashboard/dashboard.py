@@ -143,30 +143,42 @@ with tab1:
         plt.close()
 
     with col_b:
-        st.markdown("**Tren Revenue Bulanan — Top 3 Kategori**")
-        top3 = cat_rev["Kategori"].head(3).tolist()
-        df["year_month_dt"] = df["order_purchase_timestamp"].dt.to_period("M").astype(str)
-        monthly = (
-            df[df["product_category_name_english"].isin(top3)]
-            .groupby(["year_month_dt", "product_category_name_english"])["total_payment"]
-            .sum().reset_index()
-        )
-        fig, ax = plt.subplots(figsize=(8, 5))
-        palette = {top3[0]: "#1565C0", top3[1]: "#FF7043", top3[2]: "#43A047"}
-        for cat in top3:
-            sub = monthly[monthly["product_category_name_english"] == cat]
-            ax.plot(sub["year_month_dt"], sub["total_payment"]/1e3,
-                    marker="o", markersize=4, linewidth=2, label=cat,
-                    color=palette.get(cat, "#888"))
-        ax.set_xlabel("Bulan", fontsize=10)
-        ax.set_ylabel("Revenue (Ribu BRL)", fontsize=10)
-        ax.legend(fontsize=8)
-        ax.tick_params(axis="x", rotation=45)
-        ax.grid(axis="y", alpha=0.4)
-        sns.despine()
-        plt.tight_layout()
-        st.pyplot(fig)
-        plt.close()
+        st.markdown("**Tren Revenue Bulanan — Top Kategori**")
+        
+        top_cats = cat_rev["Kategori"].head(3).tolist()
+        
+        if not top_cats:
+            st.info("Tidak ada data kategori untuk filter yang dipilih.")
+        else:
+            default_colors = ["#1565C0", "#FF7043", "#43A047"]
+            palette = {cat: default_colors[i] for i, cat in enumerate(top_cats)}
+
+            df["year_month_dt"] = df["order_purchase_timestamp"].dt.to_period("M").astype(str)
+            
+            monthly = (
+                df[df["product_category_name_english"].isin(top_cats)]
+                .groupby(["year_month_dt", "product_category_name_english"])["total_payment"]
+                .sum().reset_index()
+            )
+            
+            fig, ax = plt.subplots(figsize=(8, 5))
+            
+            for cat in top_cats:
+                sub = monthly[monthly["product_category_name_english"] == cat]
+                if not sub.empty:
+                    ax.plot(sub["year_month_dt"], sub["total_payment"]/1e3,
+                            marker="o", markersize=4, linewidth=2, label=cat,
+                            color=palette.get(cat, "#888"))
+            
+            ax.set_xlabel("Bulan", fontsize=10)
+            ax.set_ylabel("Revenue (Ribu BRL)", fontsize=10)
+            ax.legend(fontsize=8)
+            plt.xticks(rotation=45)
+            ax.grid(axis="y", alpha=0.4)
+            sns.despine()
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close()
 
     # Tabel detail
     with st.expander("📋 Lihat Data Lengkap Top 10 Kategori"):
